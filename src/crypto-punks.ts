@@ -1,82 +1,91 @@
-import { BigInt } from "@graphprotocol/graph-ts"
 import {
-  CryptoPunks,
-  Assign,
-  Transfer,
-  PunkTransfer,
-  PunkOffered,
-  PunkBidEntered,
-  PunkBidWithdrawn,
-  PunkBought,
-  PunkNoLongerForSale
-} from "../generated/CryptoPunks/CryptoPunks"
-import { ExampleEntity } from "../generated/schema"
+  Assign as AssignEvent,
+  PunkTransfer as PunkTransferEvent,
+  PunkBought as PunkBoughtEvent,
+} from "../generated/CryptoPunks/CryptoPunks";
 
-export function handleAssign(event: Assign): void {
-  // Entities can be loaded from the store using a string ID; this ID
-  // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex())
+import { Assign, PunkTransfer, PunkBought } from "../generated/schema";
 
-  // Entities only exist after they have been saved to the store;
-  // `null` checks allow to create entities on demand
-  if (!entity) {
-    entity = new ExampleEntity(event.transaction.from.toHex())
-
-    // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0)
+export function handleAssign(event: AssignEvent): void {
+  const userAddress = event.params.to.toHexString();
+  const punkIndex = event.params.punkIndex.toString();
+  const timestamp = event.block.timestamp;
+  let user = User.load(userAddress);
+  if (!user) {
+    user = new User(userAddress);
+    user.punkIndexes = [];
+    user.save();
   }
-
-  // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromI32(1)
-
-  // Entity fields can be set based on event parameters
-  entity.to = event.params.to
-  entity.punkIndex = event.params.punkIndex
-
-  // Entities can be written to the store with `.save()`
-  entity.save()
-
-  // Note: If a handler doesn't require existing field values, it is faster
-  // _not_ to load the entity from the store. Instead, create it fresh with
-  // `new Entity(...)`, set the fields that should be updated and save the
-  // entity back to the store. Fields that were not set or unset remain
-  // unchanged, allowing for partial updates to be applied.
-
-  // It is also possible to access smart contracts from mappings. For
-  // example, the contract that has emitted the event can be connected to
-  // with:
-  //
-  // let contract = Contract.bind(event.address)
-  //
-  // The following functions can then be called on this contract to access
-  // state variables and other data:
-  //
-  // - contract.name(...)
-  // - contract.punksOfferedForSale(...)
-  // - contract.totalSupply(...)
-  // - contract.decimals(...)
-  // - contract.imageHash(...)
-  // - contract.nextPunkIndexToAssign(...)
-  // - contract.punkIndexToAddress(...)
-  // - contract.standard(...)
-  // - contract.punkBids(...)
-  // - contract.balanceOf(...)
-  // - contract.allPunksAssigned(...)
-  // - contract.symbol(...)
-  // - contract.punksRemainingToAssign(...)
-  // - contract.pendingWithdrawals(...)
+  let assign = Assign.load(punkIndex);
+  if (!assign) {
+    assign = new Assign(punkIndex);
+    assign.punk = punkIndex;
+    assign.user = userAddress;
+    assign.timeStamp = timestamp;
+    assign.save();
+  }
+  let punk = Punk.load(punkIndex);
+  if (!punk) {
+    punk = new Punk(punkIndex);
+    punk.createdAt = timestamp;
+    punk.creator = userAddress;
+    punk.owner = userAddress;
+    punk.save();
+  }
 }
 
-export function handleTransfer(event: Transfer): void {}
+export function handlePunkTransfer(event: PunkTransferEvent): void {
+  const punkIndex = event.params.punkIndex.toString();
+  const from = event.params.from.toHexString();
+  const to = event.params.to.toHexString();
+  const timestamp = event.block.timestamp;
+  const hash = event.transaction.hash.toHexString();
+  let punk = Punk.load(punkIndex);
+  if (!punk) {
+    punk = new Punk(punkIndex);
+    punk.createdAt = timestamp;
+    punk.creator = from;
+    punk.owner = to;
+    punk.save();
+  } else {
+    punk.owner = to;
+    punk.save();
+  }
+  let punkTransfer = PunkTransfer.load(punkIndex);
+  if (!punkTransfer) {
+    punkTransfer = new PunkTransfer(punkIndex);
+    punkTransfer.punk = punkIndex;
+    punkTransfer.from = from;
+    punkTransfer.to = to;
+    punkTransfer.timeStamp = timestamp;
+    punkTransfer.save();
+  }
+}
 
-export function handlePunkTransfer(event: PunkTransfer): void {}
+export function handlePunkBought(event: PunkBoughtEvent): void {
+  const to = event.params.to.toHexString();
+  const from = event.params.from.toHexString();
+  const punkIndex = event.params.punkIndex.toString();
+  const amount = event.params.value;
+  const timestamp = event.block.timestamp;
+  const hash = event.transaction.hash.toHexString();
+  let PunkBought = new PunkBought(hash);
+  PunkBought.punk = punkIndex;
+  PunkBought.from = from;
+  PunkBought.to = to;
+  PunkBought.amount = amount;
+  punkBought.timeStamp = timestamp;
+  punkBought.save();
 
-export function handlePunkOffered(event: PunkOffered): void {}
-
-export function handlePunkBidEntered(event: PunkBidEntered): void {}
-
-export function handlePunkBidWithdrawn(event: PunkBidWithdrawn): void {}
-
-export function handlePunkBought(event: PunkBought): void {}
-
-export function handlePunkNoLongerForSale(event: PunkNoLongerForSale): void {}
+  let punk = Punk.load(punkIndex);
+  if (!punk) {
+    punk = new Punk(punkIndex);
+    punk.createdAt = timestamp;
+    punk.creator = from;
+    punk.owner = to;
+    punk.save();
+  } else {
+    punk.owner = to;
+    punk.save();
+  }
+}

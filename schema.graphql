@@ -1,6 +1,35 @@
-type ExampleEntity @entity {
+type Assign @entity {
   id: ID!
-  count: BigInt!
-  to: Bytes! # address
-  punkIndex: BigInt! # uint256
+  punk: Punk!
+  user: User!
+  timeStamp: BigInt!
+}
+
+type Punk @entity {
+  id: ID!
+  birthTime: BigInt!
+  creator: User!
+  owner: User!
+}
+
+type User @entity {
+  id: ID!
+  ownedPunks: [Punk!]! @derivedFrom(field: "owner")
+  madePunks: [Punk!]! @derivedFrom(field: "creator")
+}
+type PunkBought @entity {
+  id: ID!
+  punk: Punk!
+  buyer: User!
+  seller: User!
+  price: BigInt!
+  timeStamp: BigInt!
+}
+
+type PunkTransfer @entity {
+  id: ID!
+  from: User!
+  to: User!
+  punk: Punk!
+  timeStamp: BigInt!
 }

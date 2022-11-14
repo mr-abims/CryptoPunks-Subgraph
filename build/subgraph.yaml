@@ -1,6 +1,6 @@
 specVersion: 0.0.4
 schema:
-  file: ./schema.graphql
+  file: schema.graphql
 dataSources:
   - kind: ethereum
     name: CryptoPunks
@@ -8,8 +8,6 @@ dataSources:
     source:
       address: "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB"
       abi: CryptoPunks
-      startBlock: 12793976
-
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -25,7 +23,7 @@ dataSources:
         - PunkNoLongerForSale
       abis:
         - name: CryptoPunks
-          file: ./abis/CryptoPunks.json
+          file: CryptoPunks/abis/CryptoPunks.json
       eventHandlers:
         - event: Assign(indexed address,uint256)
           handler: handleAssign
@@ -33,6 +31,14 @@ dataSources:
           handler: handleTransfer
         - event: PunkTransfer(indexed address,indexed address,uint256)
           handler: handlePunkTransfer
+        - event: PunkOffered(indexed uint256,uint256,indexed address)
+          handler: handlePunkOffered
+        - event: PunkBidEntered(indexed uint256,uint256,indexed address)
+          handler: handlePunkBidEntered
+        - event: PunkBidWithdrawn(indexed uint256,uint256,indexed address)
+          handler: handlePunkBidWithdrawn
         - event: PunkBought(indexed uint256,uint256,indexed address,indexed address)
           handler: handlePunkBought
-      file: ./src/crypto-punks.ts
+        - event: PunkNoLongerForSale(indexed uint256)
+          handler: handlePunkNoLongerForSale
+      file: CryptoPunks/CryptoPunks.wasm
